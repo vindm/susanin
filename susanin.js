@@ -186,6 +186,8 @@
         if (typeof options.pattern !== 'string') {
             throw new Error('You must specify the pattern of the route');
         }
+
+        this._fromPathPattern = options.fromPathPattern;
         this._pattern = options.pattern;
 
         this._conditions = options.conditions && typeof options.conditions === 'object' ? options.conditions : {};
@@ -421,7 +423,8 @@
             matches,
             i, size,
             key,
-            queryParams;
+            queryParams,
+            matchPath;
 
         if (typeof matchObject === 'string') {
             matchObject = { path : matchObject };
@@ -438,7 +441,11 @@
         }
 
         if (typeof matchObject.path === 'string') {
-            matches = matchObject.path.match(this._parseRegExp);
+            matchPath = this._fromPathPattern ?
+                matchObject.path.replace(new RegExp('^' + this._fromPathPattern), '') :
+                matchObject.path;
+
+            matches = matchPath.match(this._parseRegExp);
 
             if (matches) {
                 ret = {};
@@ -483,6 +490,7 @@
         var newParams = {},
             queryParams = {},
             queryString,
+            buildResult,
             key,
             isMainParam,
             i, size;
@@ -512,7 +520,12 @@
         queryString = querystring.stringify(queryParams);
         queryString && (newParams.query_string = queryString);
 
-        return this._buildFn(newParams);
+        buildResult = this._buildFn(newParams);
+        if (this._fromPathPattern) {
+            buildResult = this._fromPathPattern + buildResult;
+        }
+
+        return buildResult;
     };
 
     /**
